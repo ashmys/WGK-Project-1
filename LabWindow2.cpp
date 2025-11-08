@@ -59,8 +59,36 @@ void gambarJendela() {
     glRotatef(20, 1, 0, 0);
     glRotatef(-15, 0, 1, 0);
 
-    // bingkai luar (putih)
-    kotak(1.5f, 2.5f, 0.1f, 1.0f, 1.0f, 1.0f);
+   float frameThickness = 0.1f;      // tebal bingkai
+float outerW = 1.5f;
+float outerH = 2.5f;
+float outerD = 0.1f;
+float halfW = outerW / 2.0f;
+float halfH = outerH / 2.0f;
+
+    // bingkai kiri
+    glPushMatrix();
+    glTranslatef(- halfW + frameThickness/2.0f, 0.0f, 0.0f);
+    kotak(frameThickness, outerH, outerD, 1.0f,1.0f,1.0f);
+    glPopMatrix();
+
+    // bingkai kanan
+    glPushMatrix();
+    glTranslatef(+ halfW - frameThickness/2.0f, 0.0f, 0.0f);
+    kotak(frameThickness, outerH, outerD, 1.0f,1.0f,1.0f);
+    glPopMatrix();
+
+    // bingkai atas
+    glPushMatrix();
+    glTranslatef(0.0f, + halfH - frameThickness/2.0f, 0.0f);
+    kotak(outerW - 2.0f*frameThickness, frameThickness, outerD, 1.0f,1.0f,1.0f);
+    glPopMatrix();
+
+    // bingkai bawah
+    glPushMatrix();
+    glTranslatef(0.0f, - halfH + frameThickness/2.0f, 0.0f);
+    kotak(outerW - 2.0f*frameThickness, frameThickness, outerD, 1.0f,1.0f,1.0f);
+    glPopMatrix();
 
     // daun jendela (bergerak)
     glPushMatrix();
