@@ -5,6 +5,7 @@
 
 float sudutBuka = 0.0f;
 bool terbuka = false;
+float rotasiY = 0.0f; // sudut rotasi jendela terhadap sumbu Y
 
 // Fungsi menggambar kotak 3D
 void kotak(float w, float h, float d, float r, float g, float b, float a = 1.0f) {
@@ -12,40 +13,40 @@ void kotak(float w, float h, float d, float r, float g, float b, float a = 1.0f)
     glBegin(GL_QUADS);
 
     // depan
-    glVertex3f(-w / 2, -h / 2,  d / 2);
-    glVertex3f( w / 2, -h / 2,  d / 2);
-    glVertex3f( w / 2,  h / 2,  d / 2);
-    glVertex3f(-w / 2,  h / 2,  d / 2);
+    glVertex3f(-w / 2, -h / 2, d / 2);
+    glVertex3f(w / 2, -h / 2, d / 2);
+    glVertex3f(w / 2, h / 2, d / 2);
+    glVertex3f(-w / 2, h / 2, d / 2);
 
     // belakang
     glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f(-w / 2,  h / 2, -d / 2);
-    glVertex3f( w / 2,  h / 2, -d / 2);
-    glVertex3f( w / 2, -h / 2, -d / 2);
+    glVertex3f(-w / 2, h / 2, -d / 2);
+    glVertex3f(w / 2, h / 2, -d / 2);
+    glVertex3f(w / 2, -h / 2, -d / 2);
 
     // atas
-    glVertex3f(-w / 2,  h / 2, -d / 2);
-    glVertex3f(-w / 2,  h / 2,  d / 2);
-    glVertex3f( w / 2,  h / 2,  d / 2);
-    glVertex3f( w / 2,  h / 2, -d / 2);
+    glVertex3f(-w / 2, h / 2, -d / 2);
+    glVertex3f(-w / 2, h / 2, d / 2);
+    glVertex3f(w / 2, h / 2, d / 2);
+    glVertex3f(w / 2, h / 2, -d / 2);
 
     // bawah
     glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f( w / 2, -h / 2, -d / 2);
-    glVertex3f( w / 2, -h / 2,  d / 2);
-    glVertex3f(-w / 2, -h / 2,  d / 2);
+    glVertex3f(w / 2, -h / 2, -d / 2);
+    glVertex3f(w / 2, -h / 2, d / 2);
+    glVertex3f(-w / 2, -h / 2, d / 2);
 
     // kiri
     glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f(-w / 2, -h / 2,  d / 2);
-    glVertex3f(-w / 2,  h / 2,  d / 2);
-    glVertex3f(-w / 2,  h / 2, -d / 2);
+    glVertex3f(-w / 2, -h / 2, d / 2);
+    glVertex3f(-w / 2, h / 2, d / 2);
+    glVertex3f(-w / 2, h / 2, -d / 2);
 
     // kanan
-    glVertex3f( w / 2, -h / 2, -d / 2);
-    glVertex3f( w / 2,  h / 2, -d / 2);
-    glVertex3f( w / 2,  h / 2,  d / 2);
-    glVertex3f( w / 2, -h / 2,  d / 2);
+    glVertex3f(w / 2, -h / 2, -d / 2);
+    glVertex3f(w / 2, h / 2, -d / 2);
+    glVertex3f(w / 2, h / 2, d / 2);
+    glVertex3f(w / 2, -h / 2, d / 2);
 
     glEnd();
 }
@@ -57,37 +58,38 @@ void gambarJendela() {
 
     glTranslatef(0.0f, 0.0f, -5.0f);
     glRotatef(20, 1, 0, 0);
+    glRotatef(rotasiY, 0, 1, 0); // rotasi dengan tombol panah
     glRotatef(-15, 0, 1, 0);
 
-   float frameThickness = 0.1f;      // tebal bingkai
-float outerW = 1.5f;
-float outerH = 2.5f;
-float outerD = 0.1f;
-float halfW = outerW / 2.0f;
-float halfH = outerH / 2.0f;
+    float frameThickness = 0.1f;      // tebal bingkai
+    float outerW = 1.5f;
+    float outerH = 2.5f;
+    float outerD = 0.1f;
+    float halfW = outerW / 2.0f;
+    float halfH = outerH / 2.0f;
 
     // bingkai kiri
     glPushMatrix();
-    glTranslatef(- halfW + frameThickness/2.0f, 0.0f, 0.0f);
-    kotak(frameThickness, outerH, outerD, 1.0f,1.0f,1.0f);
+    glTranslatef(-halfW + frameThickness / 2.0f, 0.0f, 0.0f);
+    kotak(frameThickness, outerH, outerD, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
     // bingkai kanan
     glPushMatrix();
-    glTranslatef(+ halfW - frameThickness/2.0f, 0.0f, 0.0f);
-    kotak(frameThickness, outerH, outerD, 1.0f,1.0f,1.0f);
+    glTranslatef(+halfW - frameThickness / 2.0f, 0.0f, 0.0f);
+    kotak(frameThickness, outerH, outerD, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
     // bingkai atas
     glPushMatrix();
-    glTranslatef(0.0f, + halfH - frameThickness/2.0f, 0.0f);
-    kotak(outerW - 2.0f*frameThickness, frameThickness, outerD, 1.0f,1.0f,1.0f);
+    glTranslatef(0.0f, +halfH - frameThickness / 2.0f, 0.0f);
+    kotak(outerW - 2.0f * frameThickness, frameThickness, outerD, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
     // bingkai bawah
     glPushMatrix();
-    glTranslatef(0.0f, - halfH + frameThickness/2.0f, 0.0f);
-    kotak(outerW - 2.0f*frameThickness, frameThickness, outerD, 1.0f,1.0f,1.0f);
+    glTranslatef(0.0f, -halfH + frameThickness / 2.0f, 0.0f);
+    kotak(outerW - 2.0f * frameThickness, frameThickness, outerD, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
     // daun jendela (bergerak)
@@ -124,20 +126,34 @@ float halfH = outerH / 2.0f;
 void timerFunc(int value) {
     if (terbuka) {
         if (sudutBuka < 70) sudutBuka += 2;
-    } else {
+    }
+    else {
         if (sudutBuka > 0) sudutBuka -= 2;
     }
     glutPostRedisplay();
     glutTimerFunc(16, timerFunc, 0);
 }
 
-// Kontrol keyboard
+// Kontrol keyboard huruf
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
-        case 'o': case 'O': terbuka = true; break;
-        case 'c': case 'C': terbuka = false; break;
-        case 27: exit(0); // ESC
+    case 'o': case 'O': terbuka = true; break;
+    case 'c': case 'C': terbuka = false; break;
+    case 27: exit(0); // ESC
     }
+}
+
+// Kontrol tombol panah
+void specialKeys(int key, int x, int y) {
+    switch (key) {
+    case GLUT_KEY_LEFT:
+        rotasiY -= 5.0f; // putar ke kiri
+        break;
+    case GLUT_KEY_RIGHT:
+        rotasiY += 5.0f; // putar ke kanan
+        break;
+    }
+    glutPostRedisplay();
 }
 
 // Inisialisasi
@@ -161,7 +177,7 @@ void reshape(int w, int h) {
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (float)w/(float)h, 1.0, 10.0);
+    gluPerspective(60.0, (float)w / (float)h, 1.0, 10.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -169,7 +185,7 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(900, 700);
-    glutCreateWindow("Jendela 3D Vertikal Engsel Atas - OpenGL + FreeGLUT + GLEW");
+    glutCreateWindow("Jendela Lab");
 
     // ** Initialize GLEW after context creation **
     GLenum err = glewInit();
@@ -183,6 +199,7 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(gambarJendela);
     glutKeyboardFunc(keyboard);
+    glutSpecialFunc(specialKeys);
     glutReshapeFunc(reshape);
     glutTimerFunc(0, timerFunc, 0);
 
