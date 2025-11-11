@@ -6,12 +6,12 @@
 static float windowOpenAngle = 0.0f;
 static bool windowIsOpen = false;
 
-static float rotationY = 0.0f;              // angle of rotation around Y axis
-static const float automaticRotationSpeed = 20.0f; // degrees per second
+static float rotationY = 0.0f;
+static const float automaticRotationSpeed = 20.0f;
 
 static float lastFrameTime = 0.0f;
 static float lastManualInputTime = 0.0f;
-static const float autoRotationPauseDuration = 1.0f; // seconds to pause auto‐rotation after manual input
+static const float autoRotationPauseDuration = 1.0f;
 
 static bool spaceKeyPreviouslyDown = false;
 
@@ -21,31 +21,37 @@ void drawBox(float width, float height, float depth,
     glColor4f(r, g, b, a);
     glBegin(GL_QUADS);
     // front
+    glNormal3f(0.0f, 0.0f, 1.0f); 
     glVertex3f(-width/2, -height/2,  depth/2);
     glVertex3f( width/2, -height/2,  depth/2);
     glVertex3f( width/2,  height/2,  depth/2);
     glVertex3f(-width/2,  height/2,  depth/2);
     // back
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glVertex3f(-width/2, -height/2, -depth/2);
     glVertex3f(-width/2,  height/2, -depth/2);
     glVertex3f( width/2,  height/2, -depth/2);
     glVertex3f( width/2, -height/2, -depth/2);
     // top
+    glNormal3f(0.0f, 1.0f, 0.0f);
     glVertex3f(-width/2,  height/2, -depth/2);
     glVertex3f(-width/2,  height/2,  depth/2);
     glVertex3f( width/2,  height/2,  depth/2);
     glVertex3f( width/2,  height/2, -depth/2);
     // bottom
+    glNormal3f(0.0f, -1.0f, 0.0f);
     glVertex3f(-width/2, -height/2, -depth/2);
     glVertex3f( width/2, -height/2, -depth/2);
     glVertex3f( width/2, -height/2,  depth/2);
     glVertex3f(-width/2, -height/2,  depth/2);
     // left
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     glVertex3f(-width/2, -height/2, -depth/2);
     glVertex3f(-width/2, -height/2,  depth/2);
     glVertex3f(-width/2,  height/2,  depth/2);
     glVertex3f(-width/2,  height/2, -depth/2);
     // right
+    glNormal3f(1.0f, 0.0f, 0.0f);
     glVertex3f( width/2, -height/2, -depth/2);
     glVertex3f( width/2,  height/2, -depth/2);
     glVertex3f( width/2,  height/2,  depth/2);
@@ -64,10 +70,8 @@ void renderScene()
     float currentTime = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
     float sinceManual = currentTime - lastManualInputTime;
     if (sinceManual >= autoRotationPauseDuration) {
-        // automatic rotation resumes
         glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
     } else {
-        // manual override is still active; we still apply rotationY
         glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
     }
 
@@ -111,12 +115,12 @@ void renderScene()
       glRotatef(windowOpenAngle, 1.0f, 0.0f, 0.0f);
       glTranslatef(0.0f, -1.25f, 0.0f);
 
-      // Draw only the frame of the panel (i.e., a “hole” inside)
+      // Draw only the frame of the panel
       {
         const float panelTotalW = 1.3f;
         const float panelTotalH = 2.3f;
         const float panelDepth  = 0.05f;
-        const float border = 0.1f;   // width of the panel’s own frame
+        const float border = 0.1f;
         const float innerW = panelTotalW - 2.0f*border;
         const float innerH = panelTotalH - 2.0f*border;
 
@@ -145,7 +149,7 @@ void renderScene()
         glPopMatrix();
       }
 
-      // Transparent inner glass (behind the hole/frame)
+      // Transparent inner glass
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glDepthMask(GL_FALSE);
@@ -173,15 +177,13 @@ void timerCallback(int value)
     float deltaTime = currentTime - lastFrameTime;
     lastFrameTime = currentTime;
 
-    // Automatic rotation if allowed
     if ((currentTime - lastManualInputTime) >= autoRotationPauseDuration) {
         rotationY += automaticRotationSpeed * deltaTime;
         if (rotationY >= 360.0f) rotationY -= 360.0f;
     }
 
-    // Update open/close angle
     const float maxOpenAngle = 70.0f;
-    const float openSpeed = 90.0f; // degrees per second
+    const float openSpeed = 90.0f;
     if (windowIsOpen) {
         if (windowOpenAngle < maxOpenAngle) {
             windowOpenAngle += openSpeed * deltaTime;
@@ -237,10 +239,40 @@ void specialKeyHandler(int key, int x, int y)
 
 void setupOpenGL()
 {
-    glClearColor(0.8f, 0.8f, 0.85f, 1.0f);
+    // Dim the background to make lighting more apparent
+    glClearColor(0.2f, 0.2f, 0.25f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+
+    // lighting and turn on a light source (GL_LIGHT0)
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    // Define light properties
+    GLfloat light_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    
+    GLfloat light_position[] = { 1.0f, 1.0f, 1.0f, 0.0f }; 
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    // Define material properties
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+    // Set a global "shininess" for all objects
+    GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat mat_shininess[] = { 50.0f };
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+    // re-normalize normals, prevents scaling transformations from messing up lighting.
+    glEnable(GL_NORMALIZE); 
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -265,7 +297,7 @@ int main(int argc, char** argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(900, 700);
-    glutCreateWindow("Window Animation with Hole in Panel");
+    glutCreateWindow("Jendela Lab");
 
     GLenum err = glewInit();
     if (GLEW_OK != err) {
