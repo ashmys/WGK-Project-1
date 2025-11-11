@@ -1,169 +1,247 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
-float sudutBuka = 0.0f;
-bool terbuka = false;
-float rotasiY = 0.0f; // sudut rotasi jendela terhadap sumbu Y
+static float windowOpenAngle = 0.0f;
+static bool windowIsOpen = false;
 
-// Fungsi menggambar kotak 3D
-void kotak(float w, float h, float d, float r, float g, float b, float a = 1.0f) {
+static float rotationY = 0.0f;              // angle of rotation around Y axis
+static const float automaticRotationSpeed = 20.0f; // degrees per second
+
+static float lastFrameTime = 0.0f;
+static float lastManualInputTime = 0.0f;
+static const float autoRotationPauseDuration = 1.0f; // seconds to pause auto‐rotation after manual input
+
+static bool spaceKeyPreviouslyDown = false;
+
+void drawBox(float width, float height, float depth,
+             float r, float g, float b, float a = 1.0f)
+{
     glColor4f(r, g, b, a);
     glBegin(GL_QUADS);
-
-    // depan
-    glVertex3f(-w / 2, -h / 2, d / 2);
-    glVertex3f(w / 2, -h / 2, d / 2);
-    glVertex3f(w / 2, h / 2, d / 2);
-    glVertex3f(-w / 2, h / 2, d / 2);
-
-    // belakang
-    glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f(-w / 2, h / 2, -d / 2);
-    glVertex3f(w / 2, h / 2, -d / 2);
-    glVertex3f(w / 2, -h / 2, -d / 2);
-
-    // atas
-    glVertex3f(-w / 2, h / 2, -d / 2);
-    glVertex3f(-w / 2, h / 2, d / 2);
-    glVertex3f(w / 2, h / 2, d / 2);
-    glVertex3f(w / 2, h / 2, -d / 2);
-
-    // bawah
-    glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f(w / 2, -h / 2, -d / 2);
-    glVertex3f(w / 2, -h / 2, d / 2);
-    glVertex3f(-w / 2, -h / 2, d / 2);
-
-    // kiri
-    glVertex3f(-w / 2, -h / 2, -d / 2);
-    glVertex3f(-w / 2, -h / 2, d / 2);
-    glVertex3f(-w / 2, h / 2, d / 2);
-    glVertex3f(-w / 2, h / 2, -d / 2);
-
-    // kanan
-    glVertex3f(w / 2, -h / 2, -d / 2);
-    glVertex3f(w / 2, h / 2, -d / 2);
-    glVertex3f(w / 2, h / 2, d / 2);
-    glVertex3f(w / 2, -h / 2, d / 2);
-
+    // front
+    glVertex3f(-width/2, -height/2,  depth/2);
+    glVertex3f( width/2, -height/2,  depth/2);
+    glVertex3f( width/2,  height/2,  depth/2);
+    glVertex3f(-width/2,  height/2,  depth/2);
+    // back
+    glVertex3f(-width/2, -height/2, -depth/2);
+    glVertex3f(-width/2,  height/2, -depth/2);
+    glVertex3f( width/2,  height/2, -depth/2);
+    glVertex3f( width/2, -height/2, -depth/2);
+    // top
+    glVertex3f(-width/2,  height/2, -depth/2);
+    glVertex3f(-width/2,  height/2,  depth/2);
+    glVertex3f( width/2,  height/2,  depth/2);
+    glVertex3f( width/2,  height/2, -depth/2);
+    // bottom
+    glVertex3f(-width/2, -height/2, -depth/2);
+    glVertex3f( width/2, -height/2, -depth/2);
+    glVertex3f( width/2, -height/2,  depth/2);
+    glVertex3f(-width/2, -height/2,  depth/2);
+    // left
+    glVertex3f(-width/2, -height/2, -depth/2);
+    glVertex3f(-width/2, -height/2,  depth/2);
+    glVertex3f(-width/2,  height/2,  depth/2);
+    glVertex3f(-width/2,  height/2, -depth/2);
+    // right
+    glVertex3f( width/2, -height/2, -depth/2);
+    glVertex3f( width/2,  height/2, -depth/2);
+    glVertex3f( width/2,  height/2,  depth/2);
+    glVertex3f( width/2, -height/2,  depth/2);
     glEnd();
 }
 
-// Fungsi utama menggambar jendela
-void gambarJendela() {
+void renderScene()
+{
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPushMatrix();
 
     glTranslatef(0.0f, 0.0f, -5.0f);
-    glRotatef(20, 1, 0, 0);
-    glRotatef(rotasiY, 0, 1, 0); // rotasi dengan tombol panah
-    glRotatef(-15, 0, 1, 0);
+    glRotatef(20.0f, 1.0f, 0.0f, 0.0f);
 
-    float frameThickness = 0.1f;      // tebal bingkai
-    float outerW = 1.5f;
-    float outerH = 2.5f;
-    float outerD = 0.1f;
-    float halfW = outerW / 2.0f;
-    float halfH = outerH / 2.0f;
+    float currentTime = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+    float sinceManual = currentTime - lastManualInputTime;
+    if (sinceManual >= autoRotationPauseDuration) {
+        // automatic rotation resumes
+        glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
+    } else {
+        // manual override is still active; we still apply rotationY
+        glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
+    }
 
-    // bingkai kiri
+    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
+
+    // window frame
+    const float frameThickness = 0.1f;
+    const float outerWidth  = 1.5f;
+    const float outerHeight = 2.5f;
+    const float outerDepth  = 0.1f;
+    const float halfW = outerWidth / 2.0f;
+    const float halfH = outerHeight / 2.0f;
+
+    // left frame
     glPushMatrix();
-    glTranslatef(-halfW + frameThickness / 2.0f, 0.0f, 0.0f);
-    kotak(frameThickness, outerH, outerD, 1.0f, 1.0f, 1.0f);
+      glTranslatef(-halfW + frameThickness/2.0f, 0.0f, 0.0f);
+      drawBox(frameThickness, outerHeight, outerDepth, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
-    // bingkai kanan
+    // right frame
     glPushMatrix();
-    glTranslatef(+halfW - frameThickness / 2.0f, 0.0f, 0.0f);
-    kotak(frameThickness, outerH, outerD, 1.0f, 1.0f, 1.0f);
+      glTranslatef(+halfW - frameThickness/2.0f, 0.0f, 0.0f);
+      drawBox(frameThickness, outerHeight, outerDepth, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
-    // bingkai atas
+    // top frame
     glPushMatrix();
-    glTranslatef(0.0f, +halfH - frameThickness / 2.0f, 0.0f);
-    kotak(outerW - 2.0f * frameThickness, frameThickness, outerD, 1.0f, 1.0f, 1.0f);
+      glTranslatef(0.0f,  +halfH - frameThickness/2.0f, 0.0f);
+      drawBox(outerWidth - 2.0f * frameThickness, frameThickness, outerDepth, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
-    // bingkai bawah
+    // bottom frame
     glPushMatrix();
-    glTranslatef(0.0f, -halfH + frameThickness / 2.0f, 0.0f);
-    kotak(outerW - 2.0f * frameThickness, frameThickness, outerD, 1.0f, 1.0f, 1.0f);
+      glTranslatef(0.0f,  -halfH + frameThickness/2.0f, 0.0f);
+      drawBox(outerWidth - 2.0f * frameThickness, frameThickness, outerDepth, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 
-    // daun jendela (bergerak)
+    // the panel (hinged part) + transparent box behind
     glPushMatrix();
-    glTranslatef(0.0f, 1.25f, 0.05f);  // engsel di atas
-    glRotatef(sudutBuka, 1, 0, 0);
-    glTranslatef(0.0f, -1.25f, 0.0f);
+      glTranslatef(0.0f, 1.25f, 0.05f); // hinge at top
+      glRotatef(windowOpenAngle, 1.0f, 0.0f, 0.0f);
+      glTranslatef(0.0f, -1.25f, 0.0f);
 
-    // bingkai daun jendela
-    kotak(1.3f, 2.3f, 0.05f, 0.9f, 0.9f, 0.9f);
+      // Draw only the frame of the panel (i.e., a “hole” inside)
+      {
+        const float panelTotalW = 1.3f;
+        const float panelTotalH = 2.3f;
+        const float panelDepth  = 0.05f;
+        const float border = 0.1f;   // width of the panel’s own frame
+        const float innerW = panelTotalW - 2.0f*border;
+        const float innerH = panelTotalH - 2.0f*border;
 
-    // kaca transparan dua sisi
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDepthMask(GL_FALSE);
-    glDisable(GL_CULL_FACE);
+        // left border
+        glPushMatrix();
+          glTranslatef(- (panelTotalW/2.0f) + (border/2.0f), 0.0f, 0.0f);
+          drawBox(border, panelTotalH, panelDepth, 0.9f, 0.9f, 0.9f);
+        glPopMatrix();
 
-    glPushMatrix();
-    glTranslatef(0.0f, 0.0f, 0.03f);
-    kotak(1.1f, 2.1f, 0.01f, 0.3f, 0.6f, 1.0f, 0.4f);
+        // right border
+        glPushMatrix();
+          glTranslatef(+ (panelTotalW/2.0f) - (border/2.0f), 0.0f, 0.0f);
+          drawBox(border, panelTotalH, panelDepth, 0.9f, 0.9f, 0.9f);
+        glPopMatrix();
+
+        // top border
+        glPushMatrix();
+          glTranslatef(0.0f, + (panelTotalH/2.0f) - (border/2.0f), 0.0f);
+          drawBox(panelTotalW - 2.0f*border, border, panelDepth, 0.9f, 0.9f, 0.9f);
+        glPopMatrix();
+
+        // bottom border
+        glPushMatrix();
+          glTranslatef(0.0f, - (panelTotalH/2.0f) + (border/2.0f), 0.0f);
+          drawBox(panelTotalW - 2.0f*border, border, panelDepth, 0.9f, 0.9f, 0.9f);
+        glPopMatrix();
+      }
+
+      // Transparent inner glass (behind the hole/frame)
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glDepthMask(GL_FALSE);
+      glDisable(GL_CULL_FACE);
+
+        glPushMatrix();
+          glTranslatef(0.0f, 0.0f, 0.03f);
+          drawBox(1.1f, 2.1f, 0.01f, 0.3f, 0.6f, 1.0f, 0.4f);
+        glPopMatrix();
+
+      glEnable(GL_CULL_FACE);
+      glDepthMask(GL_TRUE);
+      glDisable(GL_BLEND);
+
     glPopMatrix();
 
-    glEnable(GL_CULL_FACE);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
     glPopMatrix();
 
-    glPopMatrix();
     glutSwapBuffers();
 }
 
-// Animasi buka/tutup
-void timerFunc(int value) {
-    if (terbuka) {
-        if (sudutBuka < 70) sudutBuka += 2;
+void timerCallback(int value)
+{
+    float currentTime = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+    float deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+
+    // Automatic rotation if allowed
+    if ((currentTime - lastManualInputTime) >= autoRotationPauseDuration) {
+        rotationY += automaticRotationSpeed * deltaTime;
+        if (rotationY >= 360.0f) rotationY -= 360.0f;
     }
-    else {
-        if (sudutBuka > 0) sudutBuka -= 2;
+
+    // Update open/close angle
+    const float maxOpenAngle = 70.0f;
+    const float openSpeed = 90.0f; // degrees per second
+    if (windowIsOpen) {
+        if (windowOpenAngle < maxOpenAngle) {
+            windowOpenAngle += openSpeed * deltaTime;
+            if (windowOpenAngle > maxOpenAngle) windowOpenAngle = maxOpenAngle;
+        }
+    } else {
+        if (windowOpenAngle > 0.0f) {
+            windowOpenAngle -= openSpeed * deltaTime;
+            if (windowOpenAngle < 0.0f) windowOpenAngle = 0.0f;
+        }
+    }
+
+    glutPostRedisplay();
+    glutTimerFunc(16, timerCallback, 0);
+}
+
+void keyPress(unsigned char key, int x, int y)
+{
+    if (key == ' ') {
+        if (!spaceKeyPreviouslyDown) {
+            windowIsOpen = !windowIsOpen;
+        }
+        spaceKeyPreviouslyDown = true;
+    }
+    else if (key == 27) { // ESC
+        std::exit(EXIT_SUCCESS);
+    }
+}
+
+void keyRelease(unsigned char key, int x, int y)
+{
+    if (key == ' ') {
+        spaceKeyPreviouslyDown = false;
+    }
+}
+
+void specialKeyHandler(int key, int x, int y)
+{
+    switch (key) {
+      case GLUT_KEY_LEFT:
+        rotationY -= 5.0f;
+        lastManualInputTime = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+        break;
+      case GLUT_KEY_RIGHT:
+        rotationY += 5.0f;
+        lastManualInputTime = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+        break;
+      default:
+        break;
     }
     glutPostRedisplay();
-    glutTimerFunc(16, timerFunc, 0);
 }
 
-// Kontrol keyboard huruf
-void keyboard(unsigned char key, int x, int y) {
-    switch (key) {
-    case 'o': case 'O': terbuka = true; break;
-    case 'c': case 'C': terbuka = false; break;
-    case 27: exit(0); // ESC
-    }
-}
-
-// Kontrol tombol panah
-void specialKeys(int key, int x, int y) {
-    switch (key) {
-    case GLUT_KEY_LEFT:
-        rotasiY -= 5.0f; // putar ke kiri
-        break;
-    case GLUT_KEY_RIGHT:
-        rotasiY += 5.0f; // putar ke kanan
-        break;
-    }
-    glutPostRedisplay();
-}
-
-// Inisialisasi
-void initGL() {
+void setupOpenGL()
+{
     glClearColor(0.8f, 0.8f, 0.85f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    // proyeksi awal
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60.0, 1.0, 1.0, 10.0);
@@ -171,38 +249,42 @@ void initGL() {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void reshape(int w, int h) {
+void reshapeHandler(int w, int h)
+{
     if (h == 0) h = 1;
     glViewport(0, 0, w, h);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (float)w / (float)h, 1.0, 10.0);
+    gluPerspective(60.0, static_cast<float>(w)/static_cast<float>(h), 1.0, 10.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(900, 700);
-    glutCreateWindow("Jendela Lab");
+    glutCreateWindow("Window Animation with Hole in Panel");
 
-    // ** Initialize GLEW after context creation **
     GLenum err = glewInit();
     if (GLEW_OK != err) {
-        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+        std::fprintf(stderr, "GLEW init error: %s\n", glewGetErrorString(err));
         return EXIT_FAILURE;
     }
-    fprintf(stdout, "Using GLEW %s\n", glewGetString(GLEW_VERSION));
+    std::fprintf(stdout, "Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
-    initGL();
+    setupOpenGL();
+    lastFrameTime       = static_cast<float>(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+    lastManualInputTime = lastFrameTime;
 
-    glutDisplayFunc(gambarJendela);
-    glutKeyboardFunc(keyboard);
-    glutSpecialFunc(specialKeys);
-    glutReshapeFunc(reshape);
-    glutTimerFunc(0, timerFunc, 0);
+    glutDisplayFunc(renderScene);
+    glutKeyboardFunc(keyPress);
+    glutKeyboardUpFunc(keyRelease);
+    glutSpecialFunc(specialKeyHandler);
+    glutReshapeFunc(reshapeHandler);
+    glutTimerFunc(0, timerCallback, 0);
 
     glutMainLoop();
-    return 0;
+    return EXIT_SUCCESS;
 }
